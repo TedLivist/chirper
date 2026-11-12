@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chirp;
 use Illuminate\Http\Request;
 
 class ChirpController extends Controller
@@ -11,23 +12,10 @@ class ChirpController extends Controller
      */
     public function index() {
 
-        $chirps = [
-            [
-                'author' => 'Jane Doe',
-                'message' => 'Just deployed my first Laravel app! 🚀',
-                'time' => '5 minutes ago'
-            ],
-            [
-                'author' => 'John Smith',
-                'message' => 'Laravel makes web development fun again!',
-                'time' => '1 hour ago'
-            ],
-            [
-                'author' => 'Alice Johnson',
-                'message' => 'Working on something cool with Chirper...',
-                'time' => '3 hours ago'
-            ]
-        ];
+        $chirps = Chirp::with('user')
+            ->latest()
+            ->take(50)
+            ->get();
 
         return view('home', ['chirps' => $chirps]);
     }
@@ -43,9 +31,22 @@ class ChirpController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        //
+    public function store(Request $request) {
+      // Validate the request
+        $validated = $request->validate([
+            'message' => 'required|string|max:255',
+        ], [
+            'message.required' => 'Please enter a message.',
+        ]);
+
+        // Create the chirp (no user for now - we'll add auth later)
+        \App\Models\Chirp::create([
+            'message' => $validated['message'],
+            // 'user_id' => null, // We'll add authentication in lesson 11
+        ]);
+
+        // Redirect back to the feed
+        return redirect('/')->with('success', 'Your chirp has been created!');
     }
 
     /**
